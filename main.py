@@ -1,14 +1,22 @@
-from crewai import Crew, Process
 import os
+from crewai import Crew, Process
 from dotenv import load_dotenv
 from Classes.LLM import LLMCreator 
 from Classes.Agent import AgentCreator
 from Classes.Task import TaskCreator
 from Classes.AudioTranscription import AudioTranscription
 from crewai_tools import DirectorySearchTool
-import json
+import streamlit as st
+import time
 
 load_dotenv()
+
+def stream_data(text):
+    for word in text.split(" "):
+        yield word + " "
+        time.sleep(0.05)
+
+
 
 llm = LLMCreator(model=os.getenv("MODEL"), key=os.getenv("GEMINI_API_KEY")).create()
 # transcricao = AudioTranscription(file_path="source/entrega_futura.mp3").transcribe()
@@ -88,21 +96,24 @@ crew = Crew(
     verbose=True
 )
 
-if not os.path.exists:
-    print("ERRO: Diretório 'output' não encontrado!")
-else:
-    try:
-        crew_output = crew.kickoff(inputs={"query": 'Como posso fazer o acompanhamento do saldo até a entrega?'})
+st.title("Assistente Farol TI")
 
-        print(crew_output)        
-    except Exception as e:
-        print(f"ERRO durante a execução: {str(e)}")
-        print("Verifique se:")
-        print("1. O diretório 'output' existe e contém arquivos .md")
-        print("2. A API key do Gemini está correta")
-        print("3. Todas as dependências estão instaladas")
+tab1, tab2 = st.tabs(["Asisstente", "Enviar arquivos"])
 
-# print({json.dumps(crew_output.model_dump_json(indent=2))})
-
-# with open('result.json', 'w') as f:
-#     json.dump(crew_output.json_dict, indent=2, fp=f)
+with tab1:
+    prompt = st.chat_input("Digite sua pergunta")
+    with st.chat_message("Farol TI"):
+        if(prompt != None):
+            if not os.path.exists:
+                print("ERRO: Diretório 'output' não encontrado!")
+            else:
+                try:
+                    with st.spinner("Processando..."):
+                        crew_output = crew.kickoff(inputs={"query": prompt})
+                        st.write_stream(stream_data(crew_output.raw))
+                except Exception as e:
+                    print(f"ERRO durante a execução: {str(e)}")
+                    print("Verifique se:")
+                    print("1. O diretório 'output' existe e contém arquivos .md")
+                    print("2. A API key do Gemini está correta")
+                    print("3. Todas as dependências estão instaladas")            

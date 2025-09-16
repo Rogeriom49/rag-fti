@@ -1,6 +1,5 @@
 from crewai import LLM
 from langchain_google_genai import ChatGoogleGenerativeAI
-
 class LLMCreator:
     def __init__(self, model, key):
         self.model = model
